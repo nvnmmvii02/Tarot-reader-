@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z-Tarot: Mystical Vibe Check</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --accent: #c084fc;
+            --gold: #fbbf24;
+            --text: #f8fafc;
+            /* Default dynamic colors */
+            --card-theme: #c084fc;
+            --card-bg-start: #2e1065;
+            --card-bg-end: #000000;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 50% 50%, #1a1533 0%, #050505 100%);
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Overlay untuk Start Musik */
+        #startOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.95);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s;
+        }
+        #startOverlay h1 { font-family: 'Cinzel Decorative', cursive; color: var(--accent); }
+
+        /* Main Container */
+        .container {
+            text-align: center;
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            z-index: 10;
+            opacity: 0; /* Hide until music starts */
+            transition: opacity 1s;
+        }
+
+        header h1 {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            background: linear-gradient(to right, var(--accent), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Vibe Card Styling */
+        .tarot-area {
+            perspective: 1000px;
+            height: 420px; /* Sedikit lebih tinggi */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .card {
+            width: 280px;
+            height: 420px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .card.is-flipped { transform: rotateY(180deg); }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        /* Card Front (Bagian belakang kartu sebelum dibuka) */
+        .card-front {
+            background: linear-gradient(135deg, #1a1533 0%, #000000 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-front::after {
+            content: "✦";
+            font-size: 4rem;
+            color: var(--accent);
+            filter: drop-shadow(0 0 15px var(--accent));
+            animation: pulse 2s infinite;
+        }
+
+        /* Card Back (Bagian isi setelah dibuka) */
+        .card-back {
+            /* Dynamic Background based on card */
+            background: linear-gradient(135deg, var(--card-bg-start), var(--card-bg-end));
+            transform: rotateY(180deg);
+            border: 2px solid var(--card-theme);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-back-content {
+            padding: 25px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow-y: auto; /* Scroll kalau teks kepanjangan */
+        }
+
+        /* Custom scrollbar untuk kartu */
+        .card-back-content::-webkit-scrollbar { width: 4px; }
+        .card-back-content::-webkit-scrollbar-thumb { background: var(--card-theme); border-radius: 10px; }
+
+        #cardIcon {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 10px var(--card-theme));
+        }
+
+        #cardTitle {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 1.5rem;
+            color: var(--card-theme);
+            margin: 5px 0 15px 0;
+            text-transform: uppercase;
+        }
+
+        #cardDesc {
+            font-size: 1rem;
+            line-height: 1.5;
+            font-weight: 300;
+        }
+
+        /* Actions & Buttons */
+        .actions {
+            margin-top: 30px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: 0.5s;
+            pointer-events: none;
+        }
+        .actions.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+        button.main-btn {
+            background: linear-gradient(45deg, var(--accent), var(--card-theme));
+            border: none;
+            color: white;
+            padding: 12px 35px;
+            border-radius: 50px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(192, 132, 252, 0.3);
+            transition: 0.3s;
+        }
+        button.main-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(192, 132, 252, 0.6); }
+        
+        button.start-btn { background: var(--accent); color: white; padding: 15px 40px; border-radius: 50px; border: none; font-size: 1.2rem; font-weight: bold; cursor: pointer; }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0.5; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bgMusic" loop>
+        <source src="https://cdn.pixabay.com/download/audio/2022/10/14/audio_9813653199.mp3?filename=universe-contact-124353.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="startOverlay">
+        <h1>Z-TAROT</h1>
+        <p style="margin-bottom: 30px;">Tap di bawah untuk masuk ke dimensi lain.</p>
+        <button class="start-btn" onclick="startExperience()">ENTER THE VIBE ✨</button>
+    </div>
+
+    <div class="container" id="mainApp">
+        <header>
+            <h1>Z-TAROT</h1>
+            <p>Fokuskan energimu. Semesta mau spill sesuatu.</p>
+        </header>
+
+        <div class="tarot-area">
+            <div class="card" id="tarotCard" onclick="pullCard()">
+                <div class="card-face card-front"></div>
+                <div class="card-face card-back">
+                    <div class="card-back-content">
+                        <div id="cardIcon"></div>
+                        <h2 id="cardTitle">Card Name</h2>
+                        <p id="cardDesc">Description goes here.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions" id="actionArea">
+            <button class="main-btn" onclick="resetApp()">Spill Another Vibe ↻</button>
+        </div>
+    </div>
+
+    <script>
+        // Data Kartu Lengkap dengan Tema Visual Unik per Kartu
+        const cards = [
+            { title: "0 - The Fool", desc: "Lagi mode delulu ya? Gapapa, gas aja dulu, urusan jatuh belakangan yang penting vibes-nya dapet.", icon: "🤡", theme: "#fbbf24", bgStart: "#854d0e", bgEnd: "#422006" },
+            { title: "I - The Magician", desc: "Slay! Kamu punya segalanya buat dapet apa yang kamu mau. Tinggal sat-set-das-des aja, jangan kebanyakan wacana.", icon: "🧙‍♂️", theme: "#a855f7", bgStart: "#581c87", bgEnd: "#3b0764" },
+            { title: "II - The High Priestess", desc: "Diem-diem tau semuanya kan? Insting kamu tuh tajam, mending dengerin kata hati daripada dengerin gosip netizen.", icon: "🌙", theme: "#60a5fa", bgStart: "#1e40af", bgEnd: "#172554" },
+            { title: "III - The Empress", desc: "Mother energy! Lagi cantik, lagi subur, lagi banyak rezeki. Aura kamu emang nggak ada lawan hari ini.", icon: "👸", theme: "#f472b6", bgStart: "#9d174d", bgEnd: "#831843" },
+            { title: "IV - The Emperor", desc: "Bossy banget sih? Tapi ya emang lagi megang kendali sih. Atur aja semaumu, tapi jangan galak-galak amat sama si doi.", icon: "🤴", theme: "#ef4444", bgStart: "#991b1b", bgEnd: "#7f1d1d" },
+            { title: "V - The Hierophant", desc: "Tumben kaku banget kayak kanebo kering. Hidup nggak harus selalu ikut aturan kok, coba sesekali out of the box.", icon: "📜", theme: "#9ca3af", bgStart: "#374151", bgEnd: "#111827" },
+            { title: "VI - The Lovers", desc: "Cieee... pilihan sulit nih. Mau ikutin logika atau mau bucin aja? Pilih yang nggak bikin kamu overthinking tiap malem ya.", icon: "💞", theme: "#f87171", bgStart: "#b91c1c", bgEnd: "#991b1b" },
+            { title: "VII - The Chariot", desc: "Lagi ngegas banget nih! Fokus ke depan, jangan noleh belakang mulu, mantan udah bahagia sama yang lain, kamu kapan?", icon: "🚀", theme: "#fbbf24", bgStart: "#a16207", bgEnd: "#713f12" },
+            { title: "VIII - Strength", desc: "Sabar banget ya ngadepin ujian hidup (dan chat yang cuma diread doang). Kamu kuat banget, asli.", icon: "🦁", theme: "#d97706", bgStart: "#92400e", bgEnd: "#78350f" },
+            { title: "IX - The Hermit", desc: "Lagi mode 'Do Not Disturb' ya? Gak apa-apa, healing itu perlu. Cari jawaban di dalem diri, bukan di story orang.", icon: "🔦", theme: "#6b7280", bgStart: "#1f2937", bgEnd: "#111827" },
+            { title: "X - Wheel of Fortune", desc: "Nasib lagi muter nih. Kalau lagi di bawah, sabar. Kalau lagi di atas, jangan sombong, nanti kena spill kapok.", icon: "🎡", theme: "#34d399", bgStart: "#065f46", bgEnd: "#064e3b" },
+            { title: "XI - Justice", desc: "Karma is real, bestie. Apa yang kamu tanam itu yang kamu petik. Jadi, mending tebar kebaikan daripada tebar pesona doang.", icon: "⚖️", theme: "#22d3ee", bgStart: "#0e7490", bgEnd: "#164e63" },
+            { title: "XII - The Hanged Man", desc: "Stuck ya? Coba deh liat masalahnya pake POV lain. Kadang diem itu lebih baik daripada maksa jalan tapi nabrak.", icon: "🧘", theme: "#818cf8", bgStart: "#3730a3", bgEnd: "#312e81" },
+            { title: "XIII - Death", desc: "RIP masa lalu! Saatnya move on dan buka lembaran baru. Akhir dari sesuatu berarti awal dari sesuatu yang lebih slay.", icon: "💀", theme: "#94a3b8", bgStart: "#334155", bgEnd: "#0f172a" },
+            { title: "XIV - Temperance", desc: "Balance dong! Jangan party terus tapi tugas numpuk, atau kerja terus tapi lupa self-reward. Seimbangin vibes-nya.", icon: "🥤", theme: "#c084fc", bgStart: "#6b21a8", bgEnd: "#581c87" },
+            { title: "XV - The Devil", desc: "Red flag banget! Kamu tau itu toxic tapi kok tetep dijalanin? Hati-hati kecanduan sama hal yang salah.", icon: "😈", theme: "#dc2626", bgStart: "#7f1d1d", bgEnd: "#450a0a" },
+            { title: "XVI - The Tower", desc: "Chaos parah! Rencana kamu berantakan? Gapapa, emang harus hancur dulu biar bisa bangun fondasi yang lebih kokoh.", icon: "💥", theme: "#f87171", bgStart: "#991b1b", bgEnd: "#7f1d1d" },
+            { title: "XVII - The Star", desc: "Manifesting is real! Harapan kamu mulai keliatan nih. Tetep glowing dan percaya sama prosesnya ya.", icon: "✨", theme: "#fcd34d", bgStart: "#78350f", bgEnd: "#451a03" },
+            { title: "XVIII - The Moon", desc: "Lagi fase overthinking parah ya? Jangan percaya sama semua ketakutan kamu, itu cuma delusi malem hari aja.", icon: "🌚", theme: "#60a5fa", bgStart: "#1e3a8a", bgEnd: "#172554" },
+            { title: "XIX - The Sun", desc: "Main Character Energy! Semuanya lagi cerah, kamu lagi happy, dan semua mata tertuju padamu. Nikmatin!", icon: "🌞", theme: "#fdba74", bgStart: "#c2410c", bgEnd: "#7c2d12" },
+            { title: "XX - Judgement", desc: "Waktunya bangun! Sadar gak sih kalau kamu tuh sebenernya berharga banget? Stop nyalahin diri sendiri.", icon: "🎺", theme: "#e879f9", bgStart: "#a21caf", bgEnd: "#701a75" },
+            { title: "XXI - The World", desc: "Mission accomplished! Kamu udah di puncak nih. Waktunya ngerayain keberhasilan kamu sebelum mulai petualangan baru.", icon: "🌎", theme: "#4ade80", bgStart: "#166534", bgEnd: "#14532d" }
+        ];
+
+        const audio = document.getElementById('bgMusic');
+        const overlay = document.getElementById('startOverlay');
+        const mainApp = document.getElementById('mainApp');
+        const cardElement = document.getElementById('tarotCard');
+        const actionArea = document.getElementById('actionArea');
+
+        // Fungsi untuk memulai musik dan menampilkan aplikasi
+        function startExperience() {
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                mainApp.style.opacity = '1';
+                audio.play().catch(error => console.log("Audio playback failed:", error));
+            }, 500);
+        }
+
+        // Fungsi menarik kartu
+        function pullCard() {
+            if (!cardElement.classList.contains('is-flipped')) {
+                // 1. Pilih kartu acak
+                const randomCard = cards[Math.floor(Math.random() * cards.length)];
+                
+                // 2. Inject Visual (Warna dan Ikon) secara dinamis ke CSS Variables
+                document.documentElement.style.setProperty('--card-theme', randomCard.theme);
+                document.documentElement.style.setProperty('--card-bg-start', randomCard.bgStart);
+                document.documentElement.style.setProperty('--card-bg-end', randomCard.bgEnd);
+
+                // 3. Update Konten Teks
+                document.getElementById('cardIcon').innerText = randomCard.icon;
+                document.getElementById('cardTitle').innerText = randomCard.title.substring(4); // Menghapus angka depan biar rapi
+                document.getElementById('cardDesc').innerText = randomCard.desc;
+                
+                // 4. Animasi Flip
+                cardElement.classList.add('is-flipped');
+                
+                // 5. Munculkan tombol aksi
+                setTimeout(() => {
+                    actionArea.classList.add('show');
+                }, 800);
+            }
+        }
+
+        // Fungsi reset
+        function resetApp() {
+            cardElement.classList.remove('is-flipped');
+            actionArea.classList.remove('show');
+            // Reset warna ke default setelah kartu tertutup
+            setTimeout(() => {
+                document.documentElement.style.setProperty('--card-theme', '#c084fc');
+                document.documentElement.style.setProperty('--card-bg-start', '#2e1065');
+                document.documentElement.style.setProperty('--card-bg-end', '#000000');
+            }, 800);
+        }
+    </script>
+</body>
+</html>
